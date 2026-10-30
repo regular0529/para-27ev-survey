@@ -10,7 +10,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
 main{max-width:880px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:8px 0}
+h1{font-size:20px;margin:8px 0;display:flex;align-items:center;gap:10px}
+h1 img{height:26px;display:block}
 h2{font-size:18px;margin:0 0 16px}
 .top{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0 12px}
 .bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
@@ -63,7 +64,7 @@ button.main{background:var(--accent);border-color:var(--accent);color:#fff}
 <body>
 <main id="app">
 <div class="top">
-  <h1>PARA 27EV 역할분담 심층 설문</h1>
+  <h1><picture><source srcset="logo-white.png" media="(prefers-color-scheme:dark)"><img src="logo-black.png" alt="PARA"></picture>27EV 역할분담 심층 설문</h1>
   <div class="meta"><span id="step"></span><span id="stat"></span></div>
   <div class="bar" id="bar"></div>
 </div>
@@ -184,20 +185,20 @@ function body(it) {
   const k = it.id;
   switch (it.type) {
     case 'text': case 'num': case 'tel': case 'date':
-      return `<input data-k="${k}" type="${it.type==='num'?'text':it.type}" ${it.type==='num'||it.type==='tel'?'inputmode="numeric"':''} value="${esc(v[k])}" placeholder="${it.ph||''}">`;
-    case 'long': return `<textarea data-k="${k}" rows="3" placeholder="${it.ph||''}">${esc(v[k])}</textarea>`;
+      return `<input data-k="${k}" aria-labelledby="q_${k}" type="${it.type==='num'?'text':it.type}" ${it.type==='num'||it.type==='tel'?'inputmode="numeric"':''} value="${esc(v[k])}" placeholder="${it.ph||''}">`;
+    case 'long': return `<textarea data-k="${k}" aria-labelledby="q_${k}" rows="3" placeholder="${it.ph||''}">${esc(v[k])}</textarea>`;
     case 'radio': return `<div class="opts">${it.opts.map(o => `<label class="opt"><input type="radio" name="${k}" data-k="${k}" value="${o}" ${v[k]===o?'checked':''}>${o}</label>`).join('')}</div>`;
-    case 'select': return `<select data-k="${k}"><option value="">선택</option>${it.opts.map(o => `<option ${v[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    case 'select': return `<select data-k="${k}" aria-labelledby="q_${k}"><option value="">선택</option>${it.opts.map(o => `<option ${v[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
     case 'multi': case 'block':
       return `<div class="list">${keys(it).map(([kk,t]) => `<label class="opt"><input type="checkbox" data-k="${kk}" ${v[kk]==1?'checked':''}>${t}</label>`).join('')}</div>`
-        + (it.etc ? `<input type="text" data-k="${k}_etc" value="${esc(v[k+'_etc'])}" placeholder="기타 내용" ${v[k+'_기타']==1?'':'hidden'}>` : '');
+        + (it.etc ? `<input type="text" aria-label="기타 내용" data-k="${k}_etc" value="${esc(v[k+'_etc'])}" placeholder="기타 내용" ${v[k+'_기타']==1?'':'hidden'}>` : '');
     case 'grid':
-      return `<table class="grid"><tr><th></th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${HOURS.map(h => `<tr><th>${h}</th>${DAYS.map(d => {const c='avail_'+d+'_'+h; return `<td data-c="${c}" class="${v[c]==1?'on':''}"></td>`}).join('')}</tr>`).join('')}</table>`;
+      return `<table class="grid"><tr><th></th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${HOURS.map(h => `<tr><th>${h}</th>${DAYS.map(d => {const c='avail_'+d+'_'+h; return `<td data-c="${c}" role="button" tabindex="${c==='avail_월_09'?0:-1}" aria-label="${d}요일 ${h}시" aria-pressed="${v[c]==1}" class="${v[c]==1?'on':''}"></td>`}).join('')}</tr>`).join('')}</table>`;
     case 'parts':
       return `<div class="parts"><div>${PARTS.map(([t,ps]) => `<p class="team">${t}</p><div class="chips">${ps.map(p => `<button type="button" class="chip" data-part="${p}">${p}</button>`).join('')}</div>`).join('')}</div><div class="panel" aria-live="polite"></div></div>`;
   }
 }
-const inner = it => `<p class="q">${it.l}${it.req===false?'':'<span class="req">*</span>'}</p>${it.note?`<p class="note">${it.note}</p>`:''}${body(it)}<p class="err"></p>`;
+const inner = it => `<p class="q" id="q_${it.id}">${it.l}${it.req===false?'':'<span class="req">*</span>'}</p>${it.note?`<p class="note">${it.note}</p>`:''}${body(it)}<p class="err" role="alert"></p>`;
 
 function media(m) {
   if (!m) return '영상·이미지 준비 중';
@@ -262,7 +263,7 @@ function hyphen(s) {
 
 // 화면 만들기
 const wrap = {};
-$('secs').innerHTML = S.map((s, i) => `<section data-s="${i}" hidden><h2>${i+1}. ${s.t}</h2>${s.q.map(it => `<div class="item" data-id="${it.id}">${inner(it)}</div>`).join('')}</section>`).join('');
+$('secs').innerHTML = S.map((s, i) => `<section data-s="${i}" hidden><h2>${i+1}. ${s.t}</h2>${s.q.map(it => `<div class="item" role="group" aria-labelledby="q_${it.id}" data-id="${it.id}">${inner(it)}</div>`).join('')}</section>`).join('');
 document.querySelectorAll('.item').forEach(w => wrap[w.dataset.id] = w);
 $('bar').innerHTML = S.map(() => '<i></i>').join('');
 
@@ -288,8 +289,8 @@ app.addEventListener('input', e => {
   setErr(it, ''); refresh(); save();
 });
 
-// 희망 파트: 마우스를 올리거나 누르면 소개, 버튼으로 순위 지정
-app.addEventListener('mouseover', e => { const c = e.target.closest('[data-part]'); if (c) { fp = c.dataset.part; drawParts(); } });
+// 희망 파트: 마우스를 올리거나 키보드로 옮기거나 누르면 소개, 버튼으로 순위 지정
+for (const ev of ['mouseover', 'focusin']) app.addEventListener(ev, e => { const c = e.target.closest('[data-part]'); if (c) { fp = c.dataset.part; drawParts(); } });
 app.addEventListener('click', e => {
   const c = e.target.closest('[data-part]'), b = e.target.closest('[data-pick]');
   if (c) { fp = c.dataset.part; drawParts(); }
@@ -305,9 +306,21 @@ function paintRect(c) {
   grid.querySelectorAll('td[data-c]').forEach(td => {
     const [r, cc] = pos(td), k = td.dataset.c;
     const on = r >= Math.min(r1, r2) && r <= Math.max(r1, r2) && cc >= Math.min(c1, c2) && cc <= Math.max(c1, c2) ? paint : snap[k] == 1;
-    v[k] = on ? 1 : 0; td.classList.toggle('on', on);
+    v[k] = on ? 1 : 0; td.classList.toggle('on', on); td.setAttribute('aria-pressed', on);
   });
 }
+// 키보드: 화살표로 이동, 스페이스·엔터로 칸 전환
+grid.addEventListener('keydown', e => {
+  const c = e.target.closest('td[data-c]'); if (!c) return;
+  const [r, i] = pos(c), to = {ArrowUp:[r-1,i], ArrowDown:[r+1,i], ArrowLeft:[r,i-1], ArrowRight:[r,i+1]}[e.key];
+  if (to) {
+    e.preventDefault();
+    const n = grid.rows[to[0]]?.cells[to[1]];
+    if (n?.dataset.c) { c.tabIndex = -1; n.tabIndex = 0; n.focus(); }
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault(); paint = v[c.dataset.c] != 1; start = pos(c); snap = {...v}; paintRect(c); paint = null; setErr(byId.avail, ''); save();
+  }
+});
 grid.addEventListener('pointerdown', e => { const c = e.target.closest('td'); if (!c) return; e.preventDefault(); paint = v[c.dataset.c] != 1; start = pos(c); snap = {...v}; paintRect(c); });
 grid.addEventListener('pointermove', e => { if (paint === null) return; const c = document.elementFromPoint(e.clientX, e.clientY)?.closest('td[data-c]'); if (c && grid.contains(c)) paintRect(c); });
 addEventListener('pointerup', () => { if (paint === null) return; paint = null; setErr(byId.avail, ''); save(); });

@@ -36,16 +36,24 @@ function put(sh, d, upsert) {
   let head = sh.getLastColumn() ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0] : [];
   const add = Object.keys(d).filter(k => !head.includes(k));
   if (add.length) {
-    sh.getRange(1, head.length + 1, 1, add.length).setValues([add]);
+    sh.getRange(1, head.length + 1, 1, add.length).setValues([add.map(literal)]);
     head = head.concat(add);
   }
-  const row = head.map(k => k in d ? d[k] : '');
-  if (upsert && sh.getLastRow() > 1) {
-    const ids = sh.getRange(2, head.indexOf('sid') + 1, sh.getLastRow() - 1, 1).getDisplayValues().flat();
+  const row = head.map(k => k in d ? literal(d[k]) : '');
+  let n = sh.getLastRow() + 1;
+  if (upsert && n > 2) {
+    const ids = sh.getRange(2, head.indexOf('sid') + 1, n - 2, 1).getDisplayValues().flat();
     const i = ids.indexOf(String(d.sid));
-    if (i >= 0) return sh.getRange(i + 2, 1, 1, head.length).setValues([row]);
+    if (i >= 0) n = i + 2;
   }
-  sh.appendRow(row);
+  // 문자는 텍스트 형식으로 넣어 학번 앞자리 0을 지킨다. 0/1은 합산할 수 있게 숫자로 둔다
+  const formats = row.map(x => x instanceof Date ? 'yyyy-mm-dd hh:mm:ss' : typeof x === 'number' ? '0' : '@');
+  sh.getRange(n, 1, 1, head.length).setNumberFormats([formats]).setValues([row]);
+}
+
+// 텍스트 형식이어도 =로 시작하면 수식으로 실행되므로(실측) 글자 표시(')를 붙인다
+function literal(x) {
+  return typeof x === 'string' && /^\s*=/.test(x) ? "'" + x : x;
 }
 
 function out(o) {
