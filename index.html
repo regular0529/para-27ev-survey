@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>27EV 심층 설문</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#d9d8d2;--accent:#1f5fbf;--accent-bg:#e8f0fc;--err:#c62828}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--card:#222221;--text:#eceae4;--muted:#a3a19a;--line:#3d3d3a;--accent:#7fb0ff;--accent-bg:#1e2d45;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:880px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0}
+h2{font-size:18px;margin:0 0 16px}
+.top{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0 12px}
+.bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
+.bar i{height:4px;border-radius:2px;background:var(--line)}
+.bar i.on{background:var(--accent)}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.item{margin-bottom:24px}
+.q{font-weight:600;margin:0 0 8px}
+.req{color:var(--err);margin-left:2px}
+.note{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.err{font-size:13px;color:var(--err);margin:6px 0 0}
+.err:empty{display:none}
+input[type=text],input[type=tel],input[type=date],select,textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{resize:vertical}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.list{display:grid;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opt input{margin:4px 0 0;flex:none}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-bg)}
+.list .opt:last-child:has([data-k$="_na"]){color:var(--muted)}
+.list+input{margin-top:8px}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer}
+button.main{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){button.main{color:#10213d}}
+.nav{display:flex;gap:8px;margin:16px 0 40px}
+.nav .main{margin-left:auto}
+.parts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;align-items:start}
+.team{font-size:13px;color:var(--muted);margin:12px 0 6px}
+.team:first-child{margin-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:8px 12px}
+.chip.cur{border-color:var(--accent)}
+.chip.picked{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.panel{position:sticky;top:80px;border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel h3{margin:12px 0 4px}
+.panel p{margin:0 0 12px;color:var(--muted)}
+.media{aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.media>*{width:100%;height:100%;object-fit:cover;border:0}
+.panel button.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.picks{font-size:14px}
+@media (prefers-reduced-motion:no-preference){.panel>*{animation:fade .25s ease-out}@keyframes fade{from{opacity:0;transform:translateY(4px)}}}
+.grid{width:100%;border-collapse:collapse;user-select:none;-webkit-user-select:none;font-size:12px}
+.grid th{color:var(--muted);font-weight:400;padding:2px}
+.grid td{border:1px solid var(--line);height:28px;touch-action:none;cursor:pointer}
+.grid td.on{background:var(--accent)}
+@media (max-width:640px){main{padding:12px}section{padding:16px}.parts{grid-template-columns:1fr}.panel{position:static}}
+</style>
+</head>
+<body>
+<main id="app">
+<div class="top">
+  <h1>PARA 27EV 역할분담 심층 설문</h1>
+  <div class="meta"><span id="step"></span><span id="stat"></span></div>
+  <div class="bar" id="bar"></div>
+</div>
+<div id="secs"></div>
+<section id="done" hidden>
+  <h2>제출했습니다</h2>
+  <p id="doneTime"></p>
+  <p class="note">같은 브라우저로 다시 열면 작성한 내용이 남아 있습니다. 고친 뒤 다시 제출하면 최신 내용으로 바뀝니다.</p>
+  <button type="button" id="edit">수정하기</button>
+</section>
+<div class="nav" id="nav">
+  <button type="button" id="prev">이전</button>
+  <button type="button" id="draft">저장하기</button>
+  <button type="button" class="main" id="next">다음</button>
+</div>
+</main>
+<script>
+// Code.gs 배포 후 웹 앱 URL을 붙여 넣는다. 비어 있으면 테스트 모드(전송 내용을 콘솔에만 출력)
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyrTXoky7eHjEmASvUaLpna5FUBQc1KrY3GeLd58F6P4p33N0nHH1-gQs-WUY8GIGhL/exec';
+
+const PARTS = [['섀시',['프레임','현가장치','제동장치','조향장치','구동계']],['외장',['에어로']],['전장',['배터리','모터제어','회로설계','배선']],['전략',['전략','마케팅','회계','드라이버']],['제작',['제작']]];
+// 파트 소개: 파트명: ['설명', '이미지·mp4 경로 또는 유튜브 링크']
+const INFO = {
+  // 프레임: ['차체 뼈대를 설계하고 만듭니다', 'img/frame.jpg'],
+};
+// 열 ID의 can_m/can_e/can_d 접두어는 화면에 안 보이지만, 나중에 분야별 다각형 그래프 합산에 쓴다
+const CAN = [
+  ['can_m_1','SolidWorks·CATIA 등으로 부품을 처음부터 모델링할 수 있다'],
+  ['can_m_2','어셈블리와 가공 도면을 만들 수 있다'],
+  ['can_m_3','ANSYS 등으로 구조해석을 해 본 적 있다'],
+  ['can_m_4','선반·밀링·용접 등 공작기계를 다뤄 본 적 있다'],
+  ['can_m_5','카본 등 복합재 적층을 해 본 적 있다'],
+  ['can_m_6','3D 프린터로 부품을 출력해 본 적 있다'],
+  ['can_e_1','납땜으로 회로를 직접 완성해 본 적 있다'],
+  ['can_e_2','커넥터 크림핑이나 배선 작업을 해 본 적 있다'],
+  ['can_e_3','회로도나 PCB를 설계해 본 적 있다'],
+  ['can_e_4','Arduino·ESP32·STM32 코드를 작성해 본 적 있다'],
+  ['can_e_5','CAN·UART·I2C 통신을 다뤄 본 적 있다'],
+  ['can_e_6','멀티미터·오실로스코프로 측정해 본 적 있다'],
+  ['can_e_7','고전압 작업 안전수칙을 알고 있다'],
+  ['can_d_1','Python으로 데이터를 불러와 그래프를 그릴 수 있다'],
+  ['can_d_2','엑셀 수식과 피벗으로 표를 정리할 수 있다'],
+  ['can_d_3','예산이나 회계 업무를 해 본 적 있다'],
+  ['can_d_4','보고서나 발표자료를 혼자 완성할 수 있다'],
+  ['can_d_5','작업 절차서(SOP)나 매뉴얼을 작성해 본 적 있다'],
+  ['can_d_6','포토샵·일러스트·Figma로 디자인물을 만들 수 있다'],
+  ['can_d_7','영상 편집이나 SNS 운영을 해 본 적 있다'],
+];
+const WANT = ['새로운 부품을 설계하고 싶다','직접 가공·제작·조립을 하고 싶다','테스트하고 데이터를 분석하고 싶다','일정·문서·예산 관리를 맡고 싶다','SOP·매뉴얼처럼 일하는 방법을 정리하는 걸 좋아한다','작업장 정리, 공구·재고 관리 같은 환경관리를 맡고 싶다','팀을 이끄는 디렉터를 맡고 싶다','드라이버로 대회에 출전하고 싶다'].map((t,i)=>['want_'+(i+1),t]);
+const DAYS = [...'월화수목금토일'], HOURS = [...Array(13)].map((_,i)=>String(9+i).padStart(2,'0'));
+const MONTHS = [...Array(14)].map((_,i)=>{const d=new Date(2026,10+i);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')});
+
+const ev26 = () => v.ev26 === '참가함';
+const driver = () => v.want_8 == 1 || v.pref1 === '드라이버' || v.pref2 === '드라이버';
+const S = [
+  {t:'기본정보', q:[
+    {id:'name', l:'이름', type:'text'},
+    {id:'sid', l:'학번', type:'num', ph:'숫자만 입력'},
+    {id:'birth', l:'생년월일', type:'date'},
+    {id:'major', l:'전공', type:'text'},
+    {id:'phone', l:'전화번호', type:'tel', ph:'010-0000-0000'},
+    {id:'emergency', l:'비상연락처 (관계 포함)', type:'text', ph:'010-0000-0000 (어머니)'},
+    {id:'blood', l:'혈액형', type:'radio', opts:['A RH+','A RH−','B RH+','B RH−','O RH+','O RH−','AB RH+','AB RH−','모름'], note:'사고 시 응급 대응과 경진대회 참가자 명단 작성에 필요합니다.'},
+    {id:'llm', l:'LLM 유료 구독 여부', type:'radio', opts:['구독함','안 함']},
+    {id:'llm_model', l:'주로 쓰는 모델', type:'text', req:()=>v.llm==='구독함', note:'구독함을 골랐다면 필수입니다.'},
+    {id:'military', l:'군필 여부', type:'radio', opts:['군필','미필','해당 없음']},
+  ]},
+  {t:'희망 파트', q:[
+    {id:'pref', l:'희망 파트 1순위와 2순위를 골라 주세요', type:'parts', note:'파트를 누르면 소개가 나옵니다. 1순위와 2순위가 같아도 됩니다 (그 파트만 원한다는 뜻).'},
+  ]},
+  {t:'경험', q:[
+    {id:'race_exp', l:'대학생 자작차 대회 참가 경험', type:'radio', opts:['있음','없음']},
+    {id:'ev26', l:'2026 EV 대회 참가 여부', type:'radio', opts:['참가함','참가 안 함']},
+    {id:'ev26_part', l:'26EV에서 활동한 파트', type:'multi', opts:['프레임','서스','에어로','구동','듀얼모터','배터리','마케팅','총무','드라이버','기타'], show:ev26},
+    {id:'ev26_task', l:'26EV에서 수행한 구체적인 업무', type:'long', show:ev26},
+    {id:'ev26_good', l:'26EV가 훌륭했다고 생각하는 점', type:'long', show:ev26},
+    {id:'ev26_improve', l:'26EV에서 개선이 필요하다고 느낀 점', type:'long', show:ev26},
+    {id:'maker', l:'메이커 프로젝트 경험 (공학교육혁신센터 등). 무엇을 했는지 간단히 적어 주세요', type:'long', req:false, ph:'예: 2025 캡스톤, 라인트레이서 제작 (회로 담당)'},
+  ]},
+  {t:'역량·관심', q:[
+    {id:'can', l:'할 수 있는 것을 모두 골라 주세요', type:'block', opts:CAN},
+    {id:'want', l:'하고 싶은 것을 모두 골라 주세요', type:'block', opts:WANT},
+    {id:'drv_license', l:'운전면허', type:'radio', opts:['없음','2종','1종'], show:driver},
+    {id:'drv_exp', l:'카트·서킷·짐카나 주행 경험', type:'radio', opts:['없음','1~2회','정기적'], show:driver},
+    {id:'drv_sim', l:'시뮬레이터 연습 가능 횟수', type:'radio', opts:['주 0회','1회','2회','3회 이상'], show:driver},
+  ]},
+  {t:'활동 제약', q:[
+    {id:'scope', l:'2027년 활동 범위', type:'radio', opts:['EV만','EV + 포뮬러','미정']},
+    {id:'leave', l:'대회 전까지 졸업·군입대·교환학생·인턴 예정', type:'radio', opts:['없음','있음']},
+    {id:'leave_type', l:'예정 종류', type:'multi', opts:['졸업','군입대','교환학생','인턴'], show:()=>v.leave==='있음'},
+    {id:'leave_when', l:'예정 시기', type:'select', opts:MONTHS, show:()=>v.leave==='있음'},
+    {id:'avail', l:'학기 중 활동 가능 시간', type:'grid', note:'가능한 칸을 누르거나 드래그하세요. 한 칸은 1시간입니다 (09 = 09:00~10:00).'},
+  ]},
+  {t:'마무리', q:[
+    {id:'expect', l:'27EV를 통해 가장 얻고 싶은 것 (최대 2개)', type:'multi', opts:['실무 경험','포트폴리오','대회 수상','사람·네트워크','진로 탐색','기타'], max:2, etc:true},
+    {id:'comment', l:'하고 싶은 말이나 건의사항', type:'long', req:false},
+  ]},
+];
+
+const KEY = 'ev27_survey';
+let v = {}, cur = 0, fp = null;
+try { ({v = {}, cur = 0} = JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const all = S.flatMap(s => s.q), byId = Object.fromEntries(all.map(it => [it.id, it]));
+
+function keys(it) {
+  if (it.type === 'block') return [...it.opts, [it.id+'_na', '해당 사항 없음']];
+  if (it.type === 'multi') return it.opts.map(o => [it.id+'_'+o.replace(/\s/g,''), o]);
+  if (it.type === 'grid') return HOURS.flatMap(h => DAYS.map(d => ['avail_'+d+'_'+h]));
+  return null;
+}
+const cols = it => it.type === 'parts' ? ['pref1','pref2'] : keys(it) ? [...keys(it).map(x => x[0]), ...(it.etc ? [it.id+'_etc'] : [])] : [it.id];
+const count = it => keys(it).filter(([k]) => v[k] == 1).length;
+const isReq = it => typeof it.req === 'function' ? it.req() : it.req !== false;
+
+function body(it) {
+  const k = it.id;
+  switch (it.type) {
+    case 'text': case 'num': case 'tel': case 'date':
+      return `<input data-k="${k}" type="${it.type==='num'?'text':it.type}" ${it.type==='num'||it.type==='tel'?'inputmode="numeric"':''} value="${esc(v[k])}" placeholder="${it.ph||''}">`;
+    case 'long': return `<textarea data-k="${k}" rows="3" placeholder="${it.ph||''}">${esc(v[k])}</textarea>`;
+    case 'radio': return `<div class="opts">${it.opts.map(o => `<label class="opt"><input type="radio" name="${k}" data-k="${k}" value="${o}" ${v[k]===o?'checked':''}>${o}</label>`).join('')}</div>`;
+    case 'select': return `<select data-k="${k}"><option value="">선택</option>${it.opts.map(o => `<option ${v[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    case 'multi': case 'block':
+      return `<div class="list">${keys(it).map(([kk,t]) => `<label class="opt"><input type="checkbox" data-k="${kk}" ${v[kk]==1?'checked':''}>${t}</label>`).join('')}</div>`
+        + (it.etc ? `<input type="text" data-k="${k}_etc" value="${esc(v[k+'_etc'])}" placeholder="기타 내용" ${v[k+'_기타']==1?'':'hidden'}>` : '');
+    case 'grid':
+      return `<table class="grid"><tr><th></th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${HOURS.map(h => `<tr><th>${h}</th>${DAYS.map(d => {const c='avail_'+d+'_'+h; return `<td data-c="${c}" class="${v[c]==1?'on':''}"></td>`}).join('')}</tr>`).join('')}</table>`;
+    case 'parts':
+      return `<div class="parts"><div>${PARTS.map(([t,ps]) => `<p class="team">${t}</p><div class="chips">${ps.map(p => `<button type="button" class="chip" data-part="${p}">${p}</button>`).join('')}</div>`).join('')}</div><div class="panel" aria-live="polite"></div></div>`;
+  }
+}
+const inner = it => `<p class="q">${it.l}${it.req===false?'':'<span class="req">*</span>'}</p>${it.note?`<p class="note">${it.note}</p>`:''}${body(it)}<p class="err"></p>`;
+
+function media(m) {
+  if (!m) return '영상·이미지 준비 중';
+  const y = m.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);
+  if (y) return `<iframe src="https://www.youtube.com/embed/${y[1]}" allowfullscreen></iframe>`;
+  return /\.(mp4|webm)$/i.test(m) ? `<video src="${esc(m)}" autoplay muted loop playsinline></video>` : `<img src="${esc(m)}" alt="">`;
+}
+function drawParts(force) {
+  const w = wrap.pref, p = fp || v.pref1 || '프레임', panel = w.querySelector('.panel');
+  w.querySelectorAll('.chip').forEach(c => {
+    const n = c.dataset.part;
+    c.classList.toggle('cur', n === p);
+    c.classList.toggle('picked', n === v.pref1 || n === v.pref2);
+    c.textContent = n + (n === v.pref1 ? ' ①' : '') + (n === v.pref2 ? ' ②' : '');
+  });
+  if (force || panel.dataset.p !== p) {
+    const [desc, m] = INFO[p] || [];
+    panel.dataset.p = p;
+    panel.innerHTML = `<div class="media">${media(m)}</div><h3>${p}</h3><p>${desc || '설명 준비 중'}</p><div class="opts"><button type="button" data-pick="1">1순위로 선택</button><button type="button" data-pick="2">2순위로 선택</button></div><p class="picks"></p>`;
+  }
+  panel.querySelectorAll('[data-pick]').forEach(b => b.classList.toggle('on', v['pref'+b.dataset.pick] === p));
+  panel.querySelector('.picks').textContent = `1순위: ${v.pref1||'없음'} · 2순위: ${v.pref2||'없음'}`;
+}
+
+function check(it) {
+  if (it.show && !it.show()) return '';
+  switch (it.type) {
+    case 'block': return count(it) ? '' : "하나 이상 체크하거나 '해당 사항 없음'을 골라 주세요";
+    case 'multi':
+      if (!count(it)) return isReq(it) ? '하나 이상 골라 주세요' : '';
+      return it.etc && v[it.id+'_기타'] == 1 && !String(v[it.id+'_etc'] ?? '').trim() ? '기타 내용을 적어 주세요' : '';
+    case 'grid': return count(it) ? '' : '가능한 시간을 1칸 이상 선택해 주세요';
+    case 'parts': return v.pref1 && v.pref2 ? '' : '1순위와 2순위를 모두 골라 주세요';
+  }
+  const val = String(v[it.id] ?? '').trim();
+  if (!val) return isReq(it) ? '필수 문항입니다' : '';
+  if (it.type === 'tel' && !/^010-\d{4}-\d{4}$/.test(val)) return '010-0000-0000 형식으로 입력해 주세요';
+  return '';
+}
+const setErr = (it, msg) => { wrap[it.id].querySelector('.err').textContent = msg; };
+function validate(i) {
+  let first = null;
+  for (const it of S[i].q) { const m = check(it); setErr(it, m); if (m && !first) first = wrap[it.id]; }
+  if (first) first.scrollIntoView({block:'center', behavior:'smooth'});
+  return !first;
+}
+
+function refresh() {
+  for (const it of all) if (it.show) {
+    const w = wrap[it.id], on = it.show();
+    if (!on && !w.hidden) { cols(it).forEach(c => delete v[c]); w.innerHTML = inner(it); }
+    w.hidden = !on;
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({v, cur})); $('stat').textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}); } catch {}
+}
+function hyphen(s) {
+  const d = s.replace(/\D/g, '').slice(0, 11);
+  return d.length < 4 ? d : d.length < 8 ? d.slice(0,3)+'-'+d.slice(3) : d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+}
+
+// 화면 만들기
+const wrap = {};
+$('secs').innerHTML = S.map((s, i) => `<section data-s="${i}" hidden><h2>${i+1}. ${s.t}</h2>${s.q.map(it => `<div class="item" data-id="${it.id}">${inner(it)}</div>`).join('')}</section>`).join('');
+document.querySelectorAll('.item').forEach(w => wrap[w.dataset.id] = w);
+$('bar').innerHTML = S.map(() => '<i></i>').join('');
+
+const app = $('app');
+app.addEventListener('input', e => {
+  const el = e.target, k = el.dataset.k, w = el.closest('.item');
+  if (!k || !w) return;
+  const it = byId[w.dataset.id];
+  if (el.type === 'checkbox') {
+    v[k] = el.checked ? 1 : 0;
+    if (el.checked && it.type === 'block') {
+      const na = it.id + '_na';
+      w.querySelectorAll('input[type=checkbox]').forEach(x => { if ((k === na) !== (x.dataset.k === na)) { x.checked = false; v[x.dataset.k] = 0; } });
+    }
+    if (el.checked && it.max && count(it) > it.max) { el.checked = false; v[k] = 0; setErr(it, `최대 ${it.max}개까지 고를 수 있습니다`); return; }
+    if (it.etc) { const t = w.querySelector(`[data-k="${it.id}_etc"]`); t.hidden = v[it.id+'_기타'] != 1; if (t.hidden) { t.value = ''; v[it.id+'_etc'] = ''; } }
+  } else if (el.type === 'radio') v[k] = el.value;
+  else {
+    if (it.type === 'num') el.value = el.value.replace(/\D/g, '');
+    if (it.type === 'tel') el.value = hyphen(el.value);
+    v[k] = el.value;
+  }
+  setErr(it, ''); refresh(); save();
+});
+
+// 희망 파트: 마우스를 올리거나 누르면 소개, 버튼으로 순위 지정
+app.addEventListener('mouseover', e => { const c = e.target.closest('[data-part]'); if (c) { fp = c.dataset.part; drawParts(); } });
+app.addEventListener('click', e => {
+  const c = e.target.closest('[data-part]'), b = e.target.closest('[data-pick]');
+  if (c) { fp = c.dataset.part; drawParts(); }
+  if (b) { v['pref'+b.dataset.pick] = wrap.pref.querySelector('.panel').dataset.p; setErr(byId.pref, ''); drawParts(); refresh(); save(); }
+});
+
+// 시간 그리드 (when2meet 방식): 누른 칸의 반대 상태로, 누른 칸~현재 칸 사각형을 칠한다
+let paint = null, start, snap;
+const grid = wrap.avail.querySelector('.grid');
+const pos = c => [c.parentNode.rowIndex, c.cellIndex];
+function paintRect(c) {
+  const [r1, c1] = start, [r2, c2] = pos(c);
+  grid.querySelectorAll('td[data-c]').forEach(td => {
+    const [r, cc] = pos(td), k = td.dataset.c;
+    const on = r >= Math.min(r1, r2) && r <= Math.max(r1, r2) && cc >= Math.min(c1, c2) && cc <= Math.max(c1, c2) ? paint : snap[k] == 1;
+    v[k] = on ? 1 : 0; td.classList.toggle('on', on);
+  });
+}
+grid.addEventListener('pointerdown', e => { const c = e.target.closest('td'); if (!c) return; e.preventDefault(); paint = v[c.dataset.c] != 1; start = pos(c); snap = {...v}; paintRect(c); });
+grid.addEventListener('pointermove', e => { if (paint === null) return; const c = document.elementFromPoint(e.clientX, e.clientY)?.closest('td[data-c]'); if (c && grid.contains(c)) paintRect(c); });
+addEventListener('pointerup', () => { if (paint === null) return; paint = null; setErr(byId.avail, ''); save(); });
+
+function go(i) {
+  cur = i;
+  document.querySelectorAll('section[data-s]').forEach(s => s.hidden = +s.dataset.s !== i);
+  $('done').hidden = true; $('nav').hidden = false;
+  $('step').textContent = `${i+1} / ${S.length} ${S[i].t}`;
+  [...$('bar').children].forEach((b, j) => b.classList.toggle('on', j <= i));
+  $('prev').hidden = i === 0;
+  $('next').textContent = i === S.length - 1 ? '제출하기' : '다음';
+  save(); scrollTo(0, 0);
+}
+
+function payload() {
+  const d = {};
+  for (const it of all) { const bin = keys(it)?.map(x => x[0]) || []; for (const c of cols(it)) d[c] = v[c] ?? (bin.includes(c) ? 0 : ''); }
+  return d;
+}
+async function send(status) {
+  const d = {status, ...payload()};
+  if (!ENDPOINT) { console.log('테스트 모드 전송', d); window.lastPayload = d; return {ok:true, saved_at:new Date().toISOString()}; }
+  const r = await fetch(ENDPOINT, {method:'POST', body:JSON.stringify(d)});
+  return r.json();
+}
+const when = r => new Date(r.saved_at).toLocaleString('ko-KR');
+
+$('prev').onclick = () => go(cur - 1);
+$('next').onclick = async () => {
+  if (!validate(cur)) return;
+  if (cur < S.length - 1) return go(cur + 1);
+  for (let i = 0; i < S.length; i++) if (!validate(i)) return go(i), validate(i);
+  $('next').disabled = true; $('stat').textContent = '제출 중…';
+  try {
+    const r = await send('제출');
+    if (!r.ok) throw r.error;
+    document.querySelectorAll('section[data-s]').forEach(s => s.hidden = true);
+    $('nav').hidden = true; $('done').hidden = false;
+    $('doneTime').textContent = '서버 기록 시각: ' + when(r);
+    $('stat').textContent = '제출 완료'; scrollTo(0, 0);
+  } catch (err) { $('stat').textContent = '제출 실패. 인터넷 연결을 확인하고 다시 눌러 주세요. 작성 내용은 이 브라우저에 남아 있습니다.'; console.error(err); }
+  $('next').disabled = false;
+};
+$('draft').onclick = async () => {
+  if (!v.name || !v.sid) { go(0); ['name','sid'].forEach(k => setErr(byId[k], check(byId[k]))); $('stat').textContent = '저장하려면 이름과 학번이 필요합니다'; return; }
+  $('stat').textContent = '저장 중…';
+  try { const r = await send('임시저장'); if (!r.ok) throw r.error; $('stat').textContent = '서버 저장됨 ' + when(r); }
+  catch (err) { $('stat').textContent = '서버 저장 실패. 작성 내용은 이 브라우저에 남아 있습니다.'; console.error(err); }
+};
+$('edit').onclick = () => go(0);
+
+refresh(); drawParts(); go(Math.min(cur, S.length - 1));
+</script>
+</body>
+</html>
