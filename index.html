@@ -140,9 +140,9 @@ const COUNT = {frame:7, susp:5, brake:3, steer:4, drive:3, aero:5, battery:6, mo
 const pics = k => [...Array(COUNT[k])].map((_, i) => `img/p/${k}-${i}.jpg`);
 const INFO = {
   프레임: ['차체의 뼈대. 튜브 프레임을 설계하고 지그에 맞춰 용접합니다.', pics('frame')],
-  현가장치: ['타이어가 노면을 놓치지 않도록 암과 쇼크의 지오메트리를 설계하고 세팅합니다.', [...pics('susp'), 'img/susp-run.webp']],
-  제동장치: ['디스크와 캘리퍼로 차를 안전하게 멈추는 시스템을 설계하고 검증합니다.', [...pics('brake'), 'img/brake-stop1.webp', 'img/brake-stop2.webp']],
-  조향장치: ['랙 앤 피니언부터 스티어링 휠까지, 드라이버의 입력을 바퀴로 전달합니다.', ['img/steer-clip.webp', ...pics('steer')]],
+  현가장치: ['타이어가 노면을 놓치지 않도록 암과 쇼크의 지오메트리를 설계하고 세팅합니다.', ['img/steer-clip.webp', ...pics('susp')]],
+  제동장치: ['디스크와 캘리퍼로 차를 안전하게 멈추는 시스템을 설계하고 검증합니다.', ['img/brake-stop1.webp', 'img/brake-stop2.webp', ...pics('brake')]],
+  조향장치: ['랙 앤 피니언부터 스티어링 휠까지, 드라이버의 입력을 바퀴로 전달합니다.', ['img/steer-8b.webp', ...pics('steer')]],
   구동계: ['모터의 힘을 체인과 드라이브 샤프트로 바퀴에 전달합니다.', pics('drive')],
   에어로: ['카울과 공력 부품을 설계하고 복합재로 제작합니다.', pics('aero')],
   배터리: ['고전압 배터리 팩과 BMS를 설계하고 측정하며 관리합니다.', pics('battery')],
@@ -277,7 +277,7 @@ function media(m, alt) {
 // 움직이는 사진은 같은 주소면 처음부터 다시 재생되지 않아, 받아 둔 파일로 매번 새 주소를 만든다
 const clips = {};
 // 3초보다 긴 영상의 표시 시간(ms). 제동 영상은 두 번 반복될 만큼 보여 준다
-const HOLD = {'img/steer-clip.webp': 3700, 'img/brake-stop1.webp': 9700, 'img/brake-stop2.webp': 6700};
+const HOLD = {'img/steer-8b.webp': 5400, 'img/steer-clip.webp': 3700, 'img/brake-stop1.webp': 9700, 'img/brake-stop2.webp': 6700};
 let slide = 0, nextAt = 0;
 function showSlide(i) {
   const panel = wrap.pref.querySelector('.panel'), p = panel.dataset.p, ms = (INFO[p] || [])[1] || [];
