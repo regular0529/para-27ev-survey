@@ -45,6 +45,8 @@ textarea{resize:vertical}
 .opt:has(input:focus-visible){outline:1px solid var(--white);outline-offset:2px}
 .list .opt:last-child:has([data-k$="_na"]){background:transparent;color:var(--body)}
 .list+input{margin-top:8px}
+.opt.rh{align-items:center;cursor:default}
+.rh select{width:auto;min-height:0;padding:2px 8px}
 button{font-family:inherit;font-size:14px;font-weight:700;line-height:1;letter-spacing:1.5px;text-transform:uppercase;color:var(--white);background:transparent;border:1px solid var(--white);border-radius:0;min-height:48px;padding:16px 32px;cursor:pointer}
 button:disabled{opacity:.5}
 button:focus-visible{outline:2px solid var(--white);outline-offset:2px}
@@ -190,12 +192,12 @@ const S = [
   {t:'기본정보', q:[
     {id:'name', l:'이름', type:'text'},
     {id:'sid', l:'학번', type:'num', ph:'숫자만 입력'},
-    {id:'birth', l:'생년월일', type:'date'},
+    {id:'birth', l:'생년월일', type:'date', ph:'YYYY-MM-DD'},
     {id:'major', l:'전공', type:'text'},
     {id:'club_years', l:'동아리 활동 몇 년차인가요? (비활동·군입대 기간 제외)', type:'num', ph:'숫자만 입력'},
     {id:'phone', l:'전화번호', type:'tel', ph:'010-0000-0000'},
     {id:'emergency', l:'비상연락처 (관계 포함)', type:'text', ph:'010-0000-0000 (어머니)'},
-    {id:'blood', l:'혈액형', type:'radio', opts:['A RH+','A RH−','B RH+','B RH−','O RH+','O RH−','AB RH+','AB RH−','모름'], note:'사고 시 응급 대응과 경진대회 참가자 명단 작성에 필요합니다.'},
+    {id:'blood', l:'혈액형', type:'blood', note:'사고 시 응급 대응과 경진대회 참가자 명단 작성에 필요합니다.'},
     {id:'llm', l:'LLM 유료 구독 여부', type:'radio', opts:['구독함','안 함']},
     {id:'llm_model', l:'주로 쓰는 모델', type:'text', req:()=>v.llm==='구독함', note:'구독함을 골랐다면 필수입니다.'},
     {id:'military', l:'군필 여부', type:'radio', opts:['군필','미필','해당 없음']},
@@ -253,9 +255,13 @@ function body(it) {
   const k = it.id;
   switch (it.type) {
     case 'text': case 'num': case 'tel': case 'date':
-      return `<input data-k="${k}" aria-labelledby="q_${k}" type="${it.type==='num'?'text':it.type}" ${it.type==='num'||it.type==='tel'?'inputmode="numeric"':''} value="${esc(v[k])}" placeholder="${it.ph||''}">`;
+      return `<input data-k="${k}" aria-labelledby="q_${k}" type="${it.type==='tel'?'tel':'text'}" ${it.type==='text'?'':'inputmode="numeric"'} value="${esc(v[k])}" placeholder="${it.ph||''}">`;
     case 'long': return `<textarea data-k="${k}" aria-labelledby="q_${k}" rows="3" placeholder="${it.ph||''}">${esc(v[k])}</textarea>`;
     case 'radio': return `<div class="opts">${it.opts.map(o => `<label class="opt"><input type="radio" name="${k}" data-k="${k}" value="${o}" ${v[k]===o?'checked':''}>${o}</label>`).join('')}</div>`;
+    case 'blood': {
+      const [t, rh] = String(v[k] ?? '').split(' RH');
+      return `<div class="opts">${['A','B','O','AB','모름'].map(o => `<label class="opt"><input type="radio" name="${k}" data-k="${k}" value="${o}" ${t===o?'checked':''}>${o}</label>`).join('')}<label class="opt rh" ${t==='모름'?'hidden':''}>RH <select data-k="${k}_rh" aria-label="RH 부호"><option ${rh==='−'?'':'selected'}>+</option><option ${rh==='−'?'selected':''}>−</option></select></label></div>`;
+    }
     case 'select': return `<select data-k="${k}" aria-labelledby="q_${k}"><option value="">선택</option>${it.opts.map(o => `<option ${v[k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
     case 'multi': case 'block':
       return `<div class="list">${keys(it).map(([kk,t]) => `<label class="opt"><input type="checkbox" data-k="${kk}" ${v[kk]==1?'checked':''}>${t}</label>`).join('')}</div>`
@@ -329,6 +335,7 @@ function check(it) {
   const val = String(v[it.id] ?? '').trim();
   if (!val) return isReq(it) ? '필수 문항입니다' : '';
   if (it.type === 'tel' && !/^010-\d{4}-\d{4}$/.test(val)) return '010-0000-0000 형식으로 입력해 주세요';
+  if (it.type === 'date' && !isDate(val)) return '2003-05-01처럼 실제 날짜를 입력해 주세요';
   return '';
 }
 const setErr = (it, msg) => { wrap[it.id].querySelector('.err').textContent = msg; };
@@ -349,6 +356,16 @@ function refresh() {
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify({v, cur})); $('stat').textContent = '자동 저장됨 ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}); } catch {}
 }
+function dateHyphen(s) {
+  const d = s.replace(/\D/g, '').slice(0, 8);
+  return d.length < 5 ? d : d.length < 7 ? d.slice(0,4)+'-'+d.slice(4) : d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6);
+}
+function isDate(s) {
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return false;
+  const d = new Date(+m[1], m[2] - 1, +m[3]);
+  return +m[1] >= 1900 && d <= new Date() && d.getMonth() === m[2] - 1 && d.getDate() === +m[3];
+}
 function hyphen(s) {
   const d = s.replace(/\D/g, '').slice(0, 11);
   return d.length < 4 ? d : d.length < 8 ? d.slice(0,3)+'-'+d.slice(3) : d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
@@ -365,7 +382,11 @@ app.addEventListener('input', e => {
   const el = e.target, k = el.dataset.k, w = el.closest('.item');
   if (!k || !w) return;
   const it = byId[w.dataset.id];
-  if (el.type === 'checkbox') {
+  if (it.type === 'blood') {
+    const t = w.querySelector('input:checked')?.value;
+    w.querySelector('.rh').hidden = t === '모름';
+    v.blood = !t ? '' : t === '모름' ? t : `${t} RH${w.querySelector('select').value}`;
+  } else if (el.type === 'checkbox') {
     v[k] = el.checked ? 1 : 0;
     if (el.checked && it.type === 'block') {
       const na = it.id + '_na';
@@ -377,6 +398,7 @@ app.addEventListener('input', e => {
   else {
     if (it.type === 'num') el.value = el.value.replace(/\D/g, '');
     if (it.type === 'tel') el.value = hyphen(el.value);
+    if (it.type === 'date') el.value = dateHyphen(el.value);
     v[k] = el.value;
   }
   setErr(it, ''); refresh(); save();
