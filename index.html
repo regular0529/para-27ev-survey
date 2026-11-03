@@ -208,7 +208,7 @@ const S = [
   {t:'경험', q:[
     {id:'race_exp', l:'대학생 자작차 대회 참가 경험', type:'radio', opts:['있음','없음']},
     {id:'ev26', l:'2026 EV 대회 참가 여부', type:'radio', opts:['참가함','참가 안 함']},
-    {id:'ev26_part', l:'26EV에서 활동한 파트', type:'multi', opts:['프레임','서스','에어로','구동','듀얼모터','배터리','마케팅','총무','드라이버','기타'], show:ev26},
+    {id:'ev26_part', l:'26EV에서 활동한 파트', type:'radio', opts:['프레임','서스','에어로','구동','듀얼모터','배터리','마케팅','총무','드라이버','기타'], show:ev26},
     {id:'ev26_task', l:'26EV에서 수행한 구체적인 업무', type:'long', show:ev26},
     {id:'ev26_good', l:'26EV가 훌륭했다고 생각하는 점', type:'long', show:ev26},
     {id:'ev26_improve', l:'26EV에서 개선이 필요하다고 느낀 점', type:'long', show:ev26},
@@ -458,7 +458,7 @@ function go(i) {
 
 function payload() {
   const d = {};
-  for (const it of all) { const bin = keys(it)?.map(x => x[0]) || []; for (const c of cols(it)) d[c] = v[c] ?? (bin.includes(c) ? 0 : ''); }
+  for (const it of all) { const bin = keys(it)?.map(x => x[0]) || []; const off = it.show && !it.show(); for (const c of cols(it)) d[c] = (off ? null : v[c]) ?? (bin.includes(c) ? 0 : ''); }
   return d;
 }
 async function send(status) {
