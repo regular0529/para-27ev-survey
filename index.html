@@ -136,7 +136,7 @@ button.ghost{border-color:transparent;color:var(--body);padding:16px 12px}
 // Code.gs 배포 후 웹 앱 URL을 붙여 넣는다. 비어 있으면 테스트 모드(전송 내용을 콘솔에만 출력)
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyrTXoky7eHjEmASvUaLpna5FUBQc1KrY3GeLd58F6P4p33N0nHH1-gQs-WUY8GIGhL/exec';
 
-const PARTS = [['섀시',['프레임','현가장치','제동장치','조향장치','구동계']],['외장',['에어로']],['전장',['배터리','모터제어','회로설계','배선']],['전략',['전략','마케팅','회계','드라이버']],['제작',['제작']]];
+const PARTS = [['섀시',['프레임','현가장치','제동장치','조향장치','구동계']],['외장',['에어로']],['전장',['배터리','모터제어','회로설계','배선']],['전략',['전략','스폰서쉽','마케팅','회계','드라이버']],['제작',['제작']]];
 // 파트 소개: 파트명: ['설명', [이미지·mp4 경로 또는 유튜브 링크 여러 개]]. 설명은 초안이니 팀 실정에 맞게 고친다
 const COUNT = {frame:7, susp:5, brake:3, steer:4, drive:3, aero:5, battery:6, motor:6, pcb:6, wire:6, strategy:6, marketing:6, account:5, driver:6, build:6};
 const pics = k => [...Array(COUNT[k])].map((_, i) => `img/p/${k}-${i}.jpg`);
@@ -152,7 +152,8 @@ const INFO = {
   회로설계: ['차량에 들어가는 PCB를 설계하고 납땜해 검증합니다.', pics('pcb')],
   배선: ['고전압과 저전압 하네스를 설계하고 차량에 깔끔하게 배치합니다.', pics('wire')],
   전략: ['주행 데이터를 분석해 대회 운영과 에너지 전략을 세웁니다.', pics('strategy')],
-  마케팅: ['스폰서를 유치하고 팀을 알립니다.', pics('marketing')],
+  스폰서쉽: ['실제 기업과 단체를 대상으로 스폰서 계약을 유치, 유지하기 위한 사업활동 및 기술영업을 합니다.', ['img/p/marketing-3.jpg', ...[0,1,2,3].map(i => `img/p/sponsor-${i}.jpg`)]],
+  마케팅: ['스폰서쉽이 원활하게 이루어지도록 동아리의 대외홍보 및 외장 디자인, 데칼, 랩핑을 수행합니다.', pics('marketing').filter((_, i) => i !== 3)],
   회계: ['예산을 관리하고 대회 비용보고서를 작성합니다.', pics('account')],
   드라이버: ['차를 몰고 대회에 출전하며, 주행 감각을 팀에 피드백합니다.', pics('driver')],
   제작: ['가공, 용접, 조립을 맡는 제작 실무 팀입니다.', pics('build')],
